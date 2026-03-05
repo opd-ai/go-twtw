@@ -369,46 +369,56 @@ func sectionLine(label string, entries []ComponentEntry) string {
 	}
 	// Render at most 5 components per row.
 	const perRow = 5
+	// targetRuneWidth is the number of printable rune columns between the
+	// leading "│  " (3 runes) and the closing "│" (1 rune): 68 - 3 - 1 = 64.
+	const targetRuneWidth = 64
 	for i := 0; i < len(entries); i += perRow {
 		end := i + perRow
 		if end > len(entries) {
 			end = len(entries)
 		}
 		row := entries[i:end]
-		var parts []string
+
+		// Build the row content using rune-aware padding.
+		// Each cell is 14 rune-columns wide (icon + space + name truncated to 10,
+		// padded or trimmed to exactly 14), separated by 2 spaces.
+		var cells []string
 		for _, e := range row {
-			label := e.Visual + " " + truncate(e.Name, 10)
-			parts = append(parts, fmt.Sprintf("%-14s", label))
+			cell := e.Visual + " " + truncate(e.Name, 10)
+			// Pad or trim to exactly 14 rune columns.
+			cellRunes := []rune(cell)
+			switch {
+			case len(cellRunes) < 14:
+				cell += strings.Repeat(" ", 14-len(cellRunes))
+			case len(cellRunes) > 14:
+				cell = string(cellRunes[:14])
+			}
+			cells = append(cells, cell)
 		}
-		line := "│  " + strings.Join(parts, "  ")
-		// Pad to 68 chars + closing │
-		for len(line) < 67 {
-			line += " "
+		content := strings.Join(cells, "  ")
+		contentRunes := []rune(content)
+
+		// Pad content to exactly targetRuneWidth rune columns.
+		switch {
+		case len(contentRunes) < targetRuneWidth:
+			content += strings.Repeat(" ", targetRuneWidth-len(contentRunes))
+		case len(contentRunes) > targetRuneWidth:
+			content = string(contentRunes[:targetRuneWidth])
 		}
-		line = line[:67] + "│\n"
-		sb.WriteString(line)
+		sb.WriteString("│  " + content + "│\n")
 	}
 	return sb.String()
 }
 
 // buildCrossRefs builds the cross-reference map showing which packages import others.
 func buildCrossRefs(pkgs []*analyzer.PackageInfo) []CrossRef {
-	// Build a set of known package names for filtering.
-	known := make(map[string]bool)
-	for _, p := range pkgs {
-		known[p.Name] = true
-		// Also index by the last segment of the import path.
-		parts := strings.Split(p.ImportPath, "/")
-		known[parts[len(parts)-1]] = true
-	}
-
 	seen := make(map[string]bool)
 	var refs []CrossRef
 
 	for _, p := range pkgs {
 		for _, imp := range p.Imports {
-			// Only cross-ref stdlib and well-known packages; all imports qualify
-			// for cross-referencing since they represent machine connections.
+			// Cross-reference all imports, since each represents a machine connection
+			// between this package and another.
 			key := p.Name + "→" + imp
 			if seen[key] {
 				continue

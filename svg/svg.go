@@ -199,6 +199,11 @@ func svgDefs() string {
       <stop offset="0%"   stop-color="#d0d0d0"/>
       <stop offset="100%" stop-color="#707070"/>
     </linearGradient>
+    <!-- Arrow marker for connection lines -->
+    <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5"
+            markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#8B7355" opacity="0.7"/>
+    </marker>
   </defs>
 `
 }
@@ -231,10 +236,14 @@ func drawHeader(pkg *analyzer.PackageInfo, w, y int) string {
 		`text-anchor="middle" font-family="Georgia, serif" `+
 		`font-size="22" font-weight="bold" fill="#f5e8c0">%s</text>`+"\n",
 		cx, y+30, xmlEscape("Package: "+pkg.Name))
-	// Doc comment (first sentence)
+	// Doc comment (first sentence) – truncate rune-aware to avoid splitting UTF-8.
+	// maxDocRunes is the total allowed runes; truncated strings end in "…" (1 rune),
+	// so the body is capped at maxDocRunes-3 runes to leave room for the ellipsis.
+	const maxDocRunes = 90
 	doc := pkg.Doc
-	if len(doc) > 90 {
-		doc = doc[:87] + "…"
+	docRunes := []rune(doc)
+	if len(docRunes) > maxDocRunes {
+		doc = string(docRunes[:maxDocRunes-3]) + "…"
 	}
 	if doc == "" {
 		doc = "No package-level documentation."
@@ -246,15 +255,35 @@ func drawHeader(pkg *analyzer.PackageInfo, w, y int) string {
 	return b.String()
 }
 
+// layoutKey returns a stable key for indexing component layouts.
+// Methods are keyed by "<receiver>.<name>" to avoid collisions when the same
+// method name appears on different receiver types. Functions are prefixed with
+// "func:" so they do not collide with type names that share the same identifier.
+// All other constructs use their bare Name, which keeps type-name lookups working.
+func layoutKey(c analyzer.ConstructInfo) string {
+	switch c.Kind {
+	case analyzer.KindMethod:
+		recv := strings.TrimPrefix(c.Receiver, "*")
+		if recv != "" {
+			return recv + "." + c.Name
+		}
+		return "method:" + c.Name
+	case analyzer.KindFunction:
+		return "func:" + c.Name
+	default:
+		return c.Name
+	}
+}
+
 // drawConnections draws arrows between related components.
 func drawConnections(all []compLayout) string {
 	if len(all) == 0 {
 		return ""
 	}
-	// Build name→layout index.
+	// Build a stable key→layout index.
 	idx := make(map[string]compLayout)
 	for _, cl := range all {
-		idx[cl.c.Name] = cl
+		idx[layoutKey(cl.c)] = cl
 	}
 
 	var b strings.Builder
@@ -263,13 +292,13 @@ func drawConnections(all []compLayout) string {
 	for _, cl := range all {
 		switch cl.c.Kind {
 		case analyzer.KindMethod:
-			// Connect method to its receiver type.
+			// Connect method to its receiver type (bare name, no prefix).
 			recv := strings.TrimPrefix(cl.c.Receiver, "*")
 			if target, ok := idx[recv]; ok {
 				drawArrow(&b, cl.p, target.p, "#8B7355", "control", seen)
 			}
 		case analyzer.KindFunction:
-			// Constructor → result type.
+			// Constructor → result type (bare name, no prefix).
 			for _, r := range cl.c.Results {
 				typeName := strings.TrimPrefix(r.Type, "*")
 				if target, ok := idx[typeName]; ok {
