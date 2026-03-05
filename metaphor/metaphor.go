@@ -5,7 +5,11 @@
 // non-programmer can understand.
 package metaphor
 
-import "github.com/opd-ai/go-twtw/analyzer"
+import (
+	"fmt"
+
+	"github.com/opd-ai/go-twtw/analyzer"
+)
 
 // MachinePartKind identifies the physical metaphor used for a Go construct.
 type MachinePartKind string
@@ -262,7 +266,7 @@ func methodCountLabel(c analyzer.ConstructInfo) string {
 	case 1:
 		return "1 contact pin"
 	default:
-		return string(rune('0'+rune(n))) + " contact pins"
+		return fmt.Sprintf("%d contact pins", n)
 	}
 }
 
@@ -275,6 +279,6 @@ func fieldCountLabel(c analyzer.ConstructInfo) string {
 	case 1:
 		return "1 compartment"
 	default:
-		return string(rune('0'+rune(n))) + " compartments"
+		return fmt.Sprintf("%d compartments", n)
 	}
 }
