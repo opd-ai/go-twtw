@@ -16,19 +16,31 @@ func buildTestPkg() *analyzer.PackageInfo {
 		Doc:        "Package widget provides reusable UI widgets.",
 		Imports:    []string{"fmt", "errors"},
 		Constructs: []analyzer.ConstructInfo{
-			{Name: "NewWidget", Kind: analyzer.KindFunction, Doc: "NewWidget creates a widget.", Exported: true,
-				Results: []analyzer.ParamInfo{{Type: "*Widget"}}},
-			{Name: "Widget", Kind: analyzer.KindStruct, Doc: "Widget is a UI component.", Exported: true,
-				Fields: []analyzer.FieldInfo{{Name: "ID", Type: "int"}, {Name: "Label", Type: "string"}}},
-			{Name: "Renderer", Kind: analyzer.KindInterface, Doc: "Renderer renders widgets.", Exported: true,
-				Methods: []string{"Render", "Flush"}},
-			{Name: "Render", Kind: analyzer.KindMethod, Doc: "Render draws the widget.", Exported: true,
-				Receiver: "*Widget"},
-			{Name: "EventChan", Kind: analyzer.KindVar, Doc: "EventChan receives widget events.",
-				Exported: true, HasChannels: true},
+			{
+				Name: "NewWidget", Kind: analyzer.KindFunction, Doc: "NewWidget creates a widget.", Exported: true,
+				Results: []analyzer.ParamInfo{{Type: "*Widget"}},
+			},
+			{
+				Name: "Widget", Kind: analyzer.KindStruct, Doc: "Widget is a UI component.", Exported: true,
+				Fields: []analyzer.FieldInfo{{Name: "ID", Type: "int"}, {Name: "Label", Type: "string"}},
+			},
+			{
+				Name: "Renderer", Kind: analyzer.KindInterface, Doc: "Renderer renders widgets.", Exported: true,
+				Methods: []string{"Render", "Flush"},
+			},
+			{
+				Name: "Render", Kind: analyzer.KindMethod, Doc: "Render draws the widget.", Exported: true,
+				Receiver: "*Widget",
+			},
+			{
+				Name: "EventChan", Kind: analyzer.KindVar, Doc: "EventChan receives widget events.",
+				Exported: true, HasChannels: true,
+			},
 			{Name: "MaxWidgets", Kind: analyzer.KindConst, Doc: "MaxWidgets is the max count.", Exported: true},
-			{Name: "RunLoop", Kind: analyzer.KindFunction, Doc: "RunLoop runs the event loop.",
-				Exported: true, SpawnsGoroutines: true},
+			{
+				Name: "RunLoop", Kind: analyzer.KindFunction, Doc: "RunLoop runs the event loop.",
+				Exported: true, SpawnsGoroutines: true,
+			},
 			{Name: "defaultColor", Kind: analyzer.KindVar, Doc: "defaultColor is the default.", Exported: false},
 		},
 	}
@@ -127,8 +139,10 @@ func TestGenerateSVG_NoXMLInjection(t *testing.T) {
 		ImportPath: "github.com/example/xss",
 		Doc:        `Doc with <script>alert("xss")</script> inside`,
 		Constructs: []analyzer.ConstructInfo{
-			{Name: `Evil<>&"Name`, Kind: analyzer.KindFunction, Exported: true,
-				Doc: `Doc with <b>bold</b> & "quotes"`},
+			{
+				Name: `Evil<>&"Name`, Kind: analyzer.KindFunction, Exported: true,
+				Doc: `Doc with <b>bold</b> & "quotes"`,
+			},
 		},
 	}
 	out := svg.GenerateSVG(pkg)

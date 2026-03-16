@@ -105,7 +105,7 @@ func main() {
 
 	// ── SVG generation ──────────────────────────────────────────────────────
 	if !*noSVG {
-		if err := os.MkdirAll(*outputDir, 0755); err != nil {
+		if err := os.MkdirAll(*outputDir, 0o755); err != nil {
 			log.Fatalf("go-twtw: cannot create output directory %q: %v", *outputDir, err)
 		}
 
@@ -115,7 +115,7 @@ func main() {
 			}
 			svgContent := svg.GenerateSVG(pkg)
 			filename := filepath.Join(*outputDir, pkg.Name+"-diagram.svg")
-			if err := os.WriteFile(filename, []byte(svgContent), 0644); err != nil {
+			if err := os.WriteFile(filename, []byte(svgContent), 0o644); err != nil {
 				log.Fatalf("go-twtw: writing SVG %q: %v", filename, err)
 			}
 			fmt.Fprintf(os.Stderr, "  SVG written: %s\n", filename)

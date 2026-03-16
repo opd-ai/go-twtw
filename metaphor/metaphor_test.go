@@ -19,11 +19,12 @@ func makeConstruct(kind analyzer.ConstructKind, name string, opts ...func(*analy
 	return c
 }
 
-func withGoroutines(c *analyzer.ConstructInfo)   { c.SpawnsGoroutines = true }
-func withChannels(c *analyzer.ConstructInfo)     { c.HasChannels = true }
+func withGoroutines(c *analyzer.ConstructInfo) { c.SpawnsGoroutines = true }
+func withChannels(c *analyzer.ConstructInfo)   { c.HasChannels = true }
 func withReceiver(r string) func(*analyzer.ConstructInfo) {
 	return func(c *analyzer.ConstructInfo) { c.Receiver = r }
 }
+
 func withParams(n int) func(*analyzer.ConstructInfo) {
 	return func(c *analyzer.ConstructInfo) {
 		for i := 0; i < n; i++ {
@@ -31,9 +32,11 @@ func withParams(n int) func(*analyzer.ConstructInfo) {
 		}
 	}
 }
+
 func withMethods(names ...string) func(*analyzer.ConstructInfo) {
 	return func(c *analyzer.ConstructInfo) { c.Methods = append(c.Methods, names...) }
 }
+
 func withFields(names ...string) func(*analyzer.ConstructInfo) {
 	return func(c *analyzer.ConstructInfo) {
 		for _, n := range names {
